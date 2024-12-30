@@ -1,26 +1,32 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM ubuntu:20.04
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Set the working directory in the container
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    libpq-dev gcc --no-install-recommends && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install required system packages
+RUN apt update -y && apt install -y \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    bash \
+    libpq-dev && apt clean
 
-# Install Python dependencies
-RUN pip install --no-cache-dir django psycopg2
+# Create a directory for your project
+RUN mkdir /app/myproject
+WORKDIR /app/myproject
 
-# Copy the project files into the container
-COPY . /app/
+# Copy the Django project (this assumes you have a requirements.txt in your project directory)
+COPY . /app/myproject/
 
-# Expose the default Django development server port
+# Create a virtual environment for your project
+RUN python3 -m venv myenv
+
+# Install project dependencies within the virtual environment
+RUN ./myenv/bin/pip install --upgrade pip
+RUN ./myenv/bin/pip install -r /app/myproject/requirements.txt
+
+# Expose port 8000 for Django
 EXPOSE 8000
 
-# Command to run the Django development server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Set the default command to run the Django development server
+CMD ["bash", "-c", "source myenv/bin/activate && python3 manage.py runserver 0.0.0.0:8000"]
